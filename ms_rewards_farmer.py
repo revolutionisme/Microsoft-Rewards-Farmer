@@ -24,9 +24,11 @@ from selenium.common.exceptions import (
     NoAlertPresentException,
 )
 
-con = sqlite3.connect('points.db')
+con = sqlite3.connect("points.db")
 cur = con.cursor()
-cur.execute("CREATE TABLE IF NOT EXISTS reward_points (reward_date date PRIMARY KEY, pc_points integer, mobile_points integer, total_points integer)")
+cur.execute(
+    "CREATE TABLE IF NOT EXISTS reward_points (reward_date date PRIMARY KEY, pc_points integer, mobile_points integer, total_points integer)"
+)
 
 
 # Define user-agents
@@ -71,7 +73,7 @@ def login(browser: WebDriver, email: str, pwd: str, isMobile: bool = False):
     waitUntilVisible(browser, By.ID, "loginHeader", 10)
     waitUntilClickable(browser, By.ID, "idChkBx_PWD_KMSI0Pwd", 10)
 
-    #value: WebElement = browser.find_element_by_id("idChkBx_PWD_KMSI0Pwd")
+    # value: WebElement = browser.find_element_by_id("idChkBx_PWD_KMSI0Pwd")
     # print(
     #     f"Keep signed in text - {value.is_selected()}, {value.is_enabled()}, {value.is_displayed()}"
     # )
@@ -81,7 +83,9 @@ def login(browser: WebDriver, email: str, pwd: str, isMobile: bool = False):
 
     number = browser.find_element_by_id("idRemoteNGC_DisplaySign")
     auth_number = number.text
-    print(f"[LOGIN] Athentication code: {auth_number}, select this number on authenticator")
+    print(
+        f"[LOGIN] Athentication code: {auth_number}, select this number on authenticator"
+    )
 
     telegram_send.send(messages=[f"Athentication code: {auth_number}"])
     # time.sleep(40)
@@ -112,9 +116,7 @@ def login(browser: WebDriver, email: str, pwd: str, isMobile: bool = False):
             # Wait 5 seconds
             time.sleep(5)
         except (ElementNotVisibleException,) as e1:
-            print(
-                f"[LOGIN] Waiting for 2FA Authetication, please select {auth_number}"
-            )
+            print(f"[LOGIN] Waiting for 2FA Authetication, please select {auth_number}")
             telegram_send.send(messages=[f"Athentication code: {auth_number}"])
             time.sleep(10)
         except (NoSuchElementException, ElementNotInteractableException) as e2:
@@ -154,7 +156,7 @@ def checkBingLogin(browser: WebDriver, isMobile: bool = False):
                 browser.find_element_by_id("mHamburger").click()
             except:
                 pass
-        
+
         try:
             # print("[LOGIN]", "Second Try...")
             time.sleep(1)
@@ -1098,11 +1100,7 @@ for account in ACCOUNTS:
         prGreen("[BING] Finished Desktop and Edge Bing searches !")
     browser.quit()
     pc_points = POINTS_COUNTER - startingPoints
-    prGreen(
-        "[POINTS] You have earned "
-        + str(pc_points)
-        + " points today !"
-    )
+    prGreen("[POINTS] You have earned " + str(pc_points) + " points today !")
 
     if remainingSearchesM != 0:
         browser = browserSetup(True, MOBILE_USER_AGENT)
@@ -1115,18 +1113,18 @@ for account in ACCOUNTS:
         browser.quit()
     mobile_points = POINTS_COUNTER - pc_points
     total_points = POINTS_COUNTER - startingPoints
-    
-    prGreen(
-        "[POINTS] You have earned "
-        + str(total_points)
-        + " points today !"
-    )
+
+    prGreen("[POINTS] You have earned " + str(total_points) + " points today !")
 
     todays_date = date.today()
     with con:
-        cur.execute(f"INSERT INTO reward_points(reward_date, pc_points, mobile_points, total_points) values ({todays_date},{pc_points}, {mobile_points}, {total_points})")
+        cur.execute(
+            f"INSERT INTO reward_points(reward_date, pc_points, mobile_points, total_points) values ({todays_date},{pc_points}, {mobile_points}, {total_points})"
+        )
 
     prGreen("[POINTS] You are now at " + str(POINTS_COUNTER) + " points !\n")
 
-    for row in con.execute("select eward_date, pc_points, mobile_points, total_points from reward_points order by date desc limit 5"):
+    for row in con.execute(
+        "select eward_date, pc_points, mobile_points, total_points from reward_points order by date desc limit 5"
+    ):
         print(row)
