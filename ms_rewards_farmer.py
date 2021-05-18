@@ -28,6 +28,7 @@ con = sqlite3.connect('points.db')
 cur = con.cursor()
 cur.execute("CREATE TABLE IF NOT EXISTS reward_points (reward_date date PRIMARY KEY, pc_points integer, mobile_points integer, total_points integer)")
 
+
 # Define user-agents
 PC_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36 Edg/86.0.622.63"
 MOBILE_USER_AGENT = "Mozilla/5.0 (Linux; Android 10; Pixel 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0. 3945.79 Mobile Safari/537.36"
