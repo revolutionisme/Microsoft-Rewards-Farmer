@@ -7,4 +7,3 @@ urllib3
 ipapi
 telegram-send
 pylint
-pandas
