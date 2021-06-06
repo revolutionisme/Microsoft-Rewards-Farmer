@@ -151,6 +151,8 @@ def browserSetup(
     # for argument in lambda_options:
     #     options.add_argument(argument)
 
+    options.add_arguments("--no-sandbox")
+    options.add_arguments("--disable-dev-shm-usage")
     options.add_argument("user-agent=" + user_agent)
     options.add_argument("lang=" + LANG.split("-")[0])
     if headless_mode:
