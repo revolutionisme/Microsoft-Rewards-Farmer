@@ -37,50 +37,50 @@ BIN_DIR = "/tmp/bin"
 CURR_BIN_DIR = os.getcwd()
 
 
-def _subprocess_log(logs):
-    res_str = logs.decode("utf-8")
-    for line in res_str.splitlines():
-        print(line)
+# def _subprocess_log(logs):
+#     res_str = logs.decode("utf-8")
+#     for line in res_str.splitlines():
+#         print(line)
 
 
-def _init_bin():
-    start = time.clock()
-    # if not os.path.exists(BIN_DIR):
-    #     print("Creating bin folder")
-    #     os.makedirs(BIN_DIR)
+# def _init_bin():
+#     start = time.clock()
+#     # if not os.path.exists(BIN_DIR):
+#     #     print("Creating bin folder")
+#     #     os.makedirs(BIN_DIR)
 
-    # print("Copying binaries for " + executable_name + " in /tmp/bin")
-    # currfile = os.path.join(CURR_BIN_DIR, executable_name)
-    # newfile = os.path.join(BIN_DIR, executable_name)
-    # shutil.copy2(executable_name, newfile)
-    res = subprocess.check_output(["mkdir", "/tmp/bin"])
-    res = subprocess.check_output(["cp", "bin/chromedriver", "/tmp/bin/"])
-    res = subprocess.check_output(["cp", "bin/chromium", "/tmp/bin/"])
+#     # print("Copying binaries for " + executable_name + " in /tmp/bin")
+#     # currfile = os.path.join(CURR_BIN_DIR, executable_name)
+#     # newfile = os.path.join(BIN_DIR, executable_name)
+#     # shutil.copy2(executable_name, newfile)
+#     res = subprocess.check_output(["mkdir", "/tmp/bin"])
+#     res = subprocess.check_output(["cp", "bin/chromedriver", "/tmp/bin/"])
+#     res = subprocess.check_output(["cp", "bin/chromium", "/tmp/bin/"])
 
-    print("Giving new binaries permissions for lambda")
-    subprocess.check_output(
-        [
-            "chmod",
-            # "-R",
-            "755",
-            "/tmp/bin/chromedriver",
-        ]
-    )
+#     print("Giving new binaries permissions for lambda")
+#     subprocess.check_output(
+#         [
+#             "chmod",
+#             # "-R",
+#             "755",
+#             "/tmp/bin/chromedriver",
+#         ]
+#     )
 
-    subprocess.check_output(
-        [
-            "chmod",
-            # "-R",
-            "755",
-            "/tmp/bin/chromium",
-        ]
-    )
-    res = subprocess.check_output(["ls", "-ltra", "/tmp/bin/"])
-    _subprocess_log(res)
+#     subprocess.check_output(
+#         [
+#             "chmod",
+#             # "-R",
+#             "755",
+#             "/tmp/bin/chromium",
+#         ]
+#     )
+#     res = subprocess.check_output(["ls", "-ltra", "/tmp/bin/"])
+#     _subprocess_log(res)
 
-    # os.chmod(newfile, 0o775)
-    elapsed = time.clock() - start
-    # print(executable_name + " ready in " + str(elapsed) + "s.")
+#     # os.chmod(newfile, 0o775)
+#     elapsed = time.clock() - start
+#     # print(executable_name + " ready in " + str(elapsed) + "s.")
 
 
 # Define browser setup function
@@ -88,7 +88,7 @@ def browserSetup(
     headless_mode: bool = False, user_agent: str = PC_USER_AGENT
 ) -> WebDriver:
     # _init_bin("headless-chromium")
-    _init_bin()
+    # _init_bin()
 
     # Create Chrome browser
     from selenium.webdriver.chrome.options import Options
