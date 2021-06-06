@@ -157,9 +157,10 @@ def browserSetup(
         options.add_argument("--headless")
     options.add_argument("log-level=3")
 
-    options.binary_location = "/tmp/bin/chromium"
+    # options.binary_location = "/tmp/bin/chromium"
     chrome_browser_obj = webdriver.Chrome(
-        executable_path="/tmp/bin/chromedriver", options=options
+        # executable_path="/tmp/bin/chromedriver", 
+        options=options
     )
     return chrome_browser_obj
 
