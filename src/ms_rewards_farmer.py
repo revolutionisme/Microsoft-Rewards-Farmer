@@ -1055,9 +1055,8 @@ prRed(
 )
 prPurple("        by Charles Bel (@charlesbel)               version 1.1\n")
 
-LANG, GEO, TZ = getCCodeLangAndOffset()
-
-# print(f"Telegram config parth - {telegram_send.get_config_path()}")
+LANG, GEO, TZ = getCCodeLangAndOffset() # ("de", "DE", 120)
+print(f"L={LANG}, G={GEO}, T={TZ}")
 
 try:
     account_path = os.path.dirname(os.path.abspath(__file__)) + "/accounts.json"
@@ -1107,7 +1106,7 @@ for account in ACCOUNTS:
     browser.quit()
     pc_points = POINTS_COUNTER - startingPoints
     prGreen(f"[POINTS] You have earned {str(pc_points)} points for Desktop today !")
-    
+
     desktop_time = time.perf_counter() - start
     print(f"Time for desktop search - {desktop_time}")
 

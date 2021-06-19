@@ -7,8 +7,8 @@ import urllib.parse
 import ipapi
 import os
 import telegram_send
-import subprocess
 import time
+import logging
 
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
@@ -19,11 +19,16 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import (
     ElementNotVisibleException,
     NoSuchElementException,
+    NoSuchWindowException,
     TimeoutException,
     ElementNotInteractableException,
     UnexpectedAlertPresentException,
     NoAlertPresentException,
 )
+
+log = logging.getLogger("MSRewardsFarmer")
+logging.basicConfig()
+log.setLevel(logging.INFO)
 
 
 # Define user-agents
@@ -37,120 +42,15 @@ BIN_DIR = "/tmp/bin"
 CURR_BIN_DIR = os.getcwd()
 
 
-# def _subprocess_log(logs):
-#     res_str = logs.decode("utf-8")
-#     for line in res_str.splitlines():
-#         print(line)
-
-
-# def _init_bin():
-#     start = time.clock()
-#     # if not os.path.exists(BIN_DIR):
-#     #     print("Creating bin folder")
-#     #     os.makedirs(BIN_DIR)
-
-#     # print("Copying binaries for " + executable_name + " in /tmp/bin")
-#     # currfile = os.path.join(CURR_BIN_DIR, executable_name)
-#     # newfile = os.path.join(BIN_DIR, executable_name)
-#     # shutil.copy2(executable_name, newfile)
-#     res = subprocess.check_output(["mkdir", "/tmp/bin"])
-#     res = subprocess.check_output(["cp", "bin/chromedriver", "/tmp/bin/"])
-#     res = subprocess.check_output(["cp", "bin/chromium", "/tmp/bin/"])
-
-#     print("Giving new binaries permissions for lambda")
-#     subprocess.check_output(
-#         [
-#             "chmod",
-#             # "-R",
-#             "755",
-#             "/tmp/bin/chromedriver",
-#         ]
-#     )
-
-#     subprocess.check_output(
-#         [
-#             "chmod",
-#             # "-R",
-#             "755",
-#             "/tmp/bin/chromium",
-#         ]
-#     )
-#     res = subprocess.check_output(["ls", "-ltra", "/tmp/bin/"])
-#     _subprocess_log(res)
-
-#     # os.chmod(newfile, 0o775)
-#     elapsed = time.clock() - start
-#     # print(executable_name + " ready in " + str(elapsed) + "s.")
-
-
 # Define browser setup function
 def browserSetup(
     headless_mode: bool = False, user_agent: str = PC_USER_AGENT
 ) -> WebDriver:
-    # _init_bin("headless-chromium")
-    # _init_bin()
 
     # Create Chrome browser
     from selenium.webdriver.chrome.options import Options
 
     options = Options()
-
-    # lambda_options = [
-    #     '--headless',
-    #     '--disable-gpu',
-    #     '--window-size=1280x1696',
-    #     '--no-sandbox',
-    #     '--hide-scrollbars',
-    #     '--enable-logging',
-    #     '--log-level=0',
-    #     '--v=99',
-    #     '--single-process',
-    #     '--ignore-certificate-errors',
-    #     # "--autoplay-policy=user-gesture-required",
-    #     # "--disable-background-networking",
-    #     # "--disable-background-timer-throttling",
-    #     # "--disable-backgrounding-occluded-windows",
-    #     # "--disable-breakpad",
-    #     # "--disable-client-side-phishing-detection",
-    #     # "--disable-component-update",
-    #     # "--disable-default-apps",
-    #     # "--disable-dev-shm-usage",
-    #     # "--disable-domain-reliability",
-    #     # "--disable-extensions",
-    #     # "--disable-features=AudioServiceOutOfProcess",
-    #     # "--disable-hang-monitor",
-    #     # "--disable-ipc-flooding-protection",
-    #     # "--disable-notifications",
-    #     # "--disable-offer-store-unmasked-wallet-cards",
-    #     # "--disable-popup-blocking",
-    #     # "--disable-print-preview",
-    #     # "--disable-prompt-on-repost",
-    #     # "--disable-renderer-backgrounding",
-    #     # "--disable-setuid-sandbox",
-    #     # "--disable-speech-api",
-    #     # "--disable-sync",
-    #     # "--disk-cache-size=33554432",
-    #     # "--hide-scrollbars",
-    #     # "--ignore-gpu-blacklist",
-    #     # "--ignore-certificate-errors",
-    #     # "--metrics-recording-only",
-    #     # "--mute-audio",
-    #     # "--no-default-browser-check",
-    #     # "--no-first-run",
-    #     # "--no-pings",
-    #     # "--no-sandbox",
-    #     # "--no-zygote",
-    #     # "--password-store=basic",
-    #     # "--use-gl=swiftshader",
-    #     # "--use-mock-keychain",
-    #     # "--single-process",
-    #     # "--headless",
-    #     f"user-agent={user_agent}",
-    #     f"lang={LANG.split('-')[0]}",
-    # ]
-    # for argument in lambda_options:
-    #     options.add_argument(argument)
-
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("user-agent=" + user_agent)
@@ -159,9 +59,8 @@ def browserSetup(
         options.add_argument("--headless")
     options.add_argument("log-level=3")
 
-    # options.binary_location = "/tmp/bin/chromium"
     chrome_browser_obj = webdriver.Chrome(
-        # executable_path="/tmp/bin/chromedriver", 
+        # executable_path="/tmp/bin/chromedriver",
         options=options
     )
     return chrome_browser_obj
@@ -174,7 +73,7 @@ def login(browser: WebDriver, email: str, pwd: str, isMobile: bool = False):
     # Wait complete loading
     waitUntilVisible(browser, By.ID, "loginHeader", 10)
     # Enter email
-    print("[LOGIN]", "Writing email...")
+    log.info("[LOGIN] Writing email...")
     browser.find_element_by_name("loginfmt").send_keys(email)
     # Click next
     browser.find_element_by_id("idSIButton9").click()
@@ -186,16 +85,16 @@ def login(browser: WebDriver, email: str, pwd: str, isMobile: bool = False):
     waitUntilClickable(browser, By.ID, "idChkBx_PWD_KMSI0Pwd", 10)
 
     # value: WebElement = browser.find_element_by_id("idChkBx_PWD_KMSI0Pwd")
-    # print(
+    # log.info(
     #     f"Keep signed in text - {value.is_selected()}, {value.is_enabled()}, {value.is_displayed()}"
     # )
     # if not value.is_selected():
     #     value.click()
-    #     print(f"After click - {value.is_selected()}")
+    #     log.info(f"After click - {value.is_selected()}")
 
     number = browser.find_element_by_id("idRemoteNGC_DisplaySign")
     auth_number = number.text
-    print(
+    log.info(
         f"[LOGIN] Athentication code: {auth_number}, select this number on authenticator"
     )
 
@@ -207,42 +106,46 @@ def login(browser: WebDriver, email: str, pwd: str, isMobile: bool = False):
     # browser.find_element_by_id("i0118").send_keys(pwd)
 
     # browser.execute_script("document.getElementById('i0118').value = '" + pwd + "';")
-    # print('[LOGIN]', 'Writing password...')
+    # log.info('[LOGIN]', 'Writing password...')
     # Click next
     # browser.find_element_by_id('idSIButton9').click()
     # Wait 5 seconds
     # time.sleep(5)
     # Click Security Check
-    print("[LOGIN]", "Passing security checks...")
+    log.info("[LOGIN] Passing security checks...")
     try:
         browser.find_element_by_id("iLandingViewAction").click()
     except (NoSuchElementException, ElementNotInteractableException) as e:
         pass
     # Wait complete loading
+    log.debug("[LOGIN] Wait till loading completes")
     try:
         waitUntilVisible(browser, By.ID, "KmsiCheckboxField", 10)
     except (TimeoutException) as e:
         pass
+    log.debug("[LOGIN] Clicking Next")
     # Click next
     while True:
         try:
             browser.find_element_by_id("idSIButton9").click()
             # Wait 5 seconds
             time.sleep(5)
-        except (ElementNotVisibleException,) as e1:
-            print(f"[LOGIN] Waiting for 2FA Authetication, please select {auth_number}")
+        except (ElementNotVisibleException, ElementNotInteractableException) as e1:
+            log.info(
+                f"[LOGIN] Waiting for 2FA Authetication, please select {auth_number}"
+            )
             telegram_send.send(
                 messages=[f"Athentication code: {auth_number}"],
                 conf="telegram-send.conf",
             )
             time.sleep(10)
-        except (NoSuchElementException, ElementNotInteractableException) as e2:
-            print(f"[LOGIN] Authntication Done")
+        except (NoSuchElementException,) as e2:
+            log.info(f"[LOGIN] Authentication Done - {e2}")
             break
 
-    print("[LOGIN]", "Logged-in !")
+    log.info("[LOGIN] Logged-in !")
     # Check Login
-    print("[LOGIN]", "Ensuring login on Bing...")
+    log.info("[LOGIN] Ensuring login on Bing...")
     checkBingLogin(browser, isMobile)
 
 
@@ -260,7 +163,7 @@ def checkBingLogin(browser: WebDriver, isMobile: bool = False):
 
     if isMobile:
         try:
-            # print("[LOGIN]", "First Try...")
+            # log.info("[LOGIN] First Try...")
             time.sleep(1)
             browser.find_element_by_id("mHamburger").click()
         except:
@@ -275,14 +178,14 @@ def checkBingLogin(browser: WebDriver, isMobile: bool = False):
                 pass
 
         try:
-            # print("[LOGIN]", "Second Try...")
+            # log.info("[LOGIN] Second Try...")
             time.sleep(1)
             browser.find_element_by_id("HBSignIn").click()
         except:
             pass
 
         try:
-            # print("[LOGIN]", "Third Try...")
+            # log.info("[LOGIN] Third Try...")
             time.sleep(2)
             browser.find_element_by_id("iShowSkip").click()
             time.sleep(3)
@@ -292,8 +195,7 @@ def checkBingLogin(browser: WebDriver, isMobile: bool = False):
                 == "https://account.live.com/proofs/Add"
             ):
                 input(
-                    "[LOGIN] Please complete the Security Check on "
-                    + browser.current_url
+                    f"[LOGIN] Please complete the Security Check on {browser.current_url}"
                 )
                 exit()
     # Wait 2 seconds
@@ -409,15 +311,13 @@ def getGoogleTrends(numberOfwords: int) -> list:
     i = 0
     while len(search_terms) < numberOfwords:
         i += 1
-        r = requests.get(
-            "https://trends.google.com/trends/api/dailytrends?hl="
-            + LANG
-            + "&ed="
-            + str((date.today() - timedelta(days=i)).strftime("%Y%m%d"))
-            + "&geo="
-            + GEO
-            + "&ns=15"
+        googletrendurl = (
+            f"https://trends.google.com/trends/api/dailytrends?hl={LANG}"
+            f"&ed={str((date.today() - timedelta(days=i)).strftime('%Y%m%d'))}"
+            f"&geo={GEO}&ns=15"
         )
+        log.debug(f"[GOOGLE TRENDS] URL queried - {googletrendurl}")
+        r = requests.get(googletrendurl)
         google_trends = json.loads(r.text[6:])
         for topic in google_trends["default"]["trendingSearchesDays"][0][
             "trendingSearches"
@@ -433,7 +333,7 @@ def getGoogleTrends(numberOfwords: int) -> list:
 def getRelatedTerms(word: str) -> list:
     try:
         r = requests.get(
-            "https://api.bing.com/osjson.aspx?query=" + word,
+            f"https://api.bing.com/osjson.aspx?query={word}",
             headers={"User-agent": PC_USER_AGENT},
         )
         return r.json()[1]
@@ -442,21 +342,27 @@ def getRelatedTerms(word: str) -> list:
 
 
 def resetTabs(browser: WebDriver):
-    try:
-        curr = browser.current_window_handle
+    while True:
+        try:
+            curr = browser.current_window_handle
 
-        for handle in browser.window_handles:
-            if handle != curr:
-                browser.switch_to.window(handle)
-                time.sleep(0.5)
-                browser.close()
-                time.sleep(0.5)
+            for handle in browser.window_handles:
+                if handle != curr:
+                    browser.switch_to.window(handle)
+                    time.sleep(0.5)
+                    browser.close()
+                    time.sleep(0.5)
 
-        browser.switch_to.window(curr)
-        time.sleep(0.5)
-        browser.get("https://account.microsoft.com/rewards/")
-    except:
-        browser.get("https://account.microsoft.com/rewards/")
+            browser.switch_to.window(curr)
+            time.sleep(0.5)
+            browser.get("https://account.microsoft.com/rewards/")
+        except NoSuchWindowException as e:
+            logging.error(f"Exception - {e}")
+            time.sleep(1)
+            continue
+        except Exception as e:
+            logging.error(f"Encountered Exception - {e}")
+            browser.get("https://account.microsoft.com/rewards/")
 
 
 def getAnswerCode(key: str, string: str) -> str:
@@ -473,7 +379,7 @@ def bingSearches(browser: WebDriver, numberOfSearches: int, isMobile: bool = Fal
     search_terms = getGoogleTrends(numberOfSearches)
     for word in search_terms:
         i += 1
-        print("[BING]", str(i) + "/" + str(numberOfSearches))
+        log.info(f"[BING] {str(i)}/{str(numberOfSearches)}")
         points = bingSearch(browser, word, isMobile)
         if points <= POINTS_COUNTER:
             relatedTerms = getRelatedTerms(word)
@@ -776,24 +682,23 @@ def completeDailySet(browser: WebDriver):
             if activity["complete"] == False:
                 cardNumber = int(activity["offerId"][-1:])
                 if activity["promotionType"] == "urlreward":
-                    print("[DAILY SET]", "Completing search of card " + str(cardNumber))
+                    log.info(f"[DAILY SET] Completing search of card {str(cardNumber)}")
                     completeDailySetSearch(browser, cardNumber)
                 if activity["promotionType"] == "quiz":
                     if (
                         activity["pointProgressMax"] == 50
                         and activity["pointProgress"] == 0
                     ):
-                        print(
-                            "[DAILY SET]",
-                            "Completing This or That of card " + str(cardNumber),
+                        log.info(
+                            f"[DAILY SET] Completing This or That of card {str(cardNumber)}"
                         )
                         completeDailySetThisOrThat(browser, cardNumber)
                     elif (
                         activity["pointProgressMax"] == 40
                         or activity["pointProgressMax"] == 30
                     ) and activity["pointProgress"] == 0:
-                        print(
-                            "[DAILY SET]", "Completing quiz of card " + str(cardNumber)
+                        log.info(
+                            f"[DAILY SET] Completing quiz of card {str(cardNumber)}"
                         )
                         completeDailySetQuiz(browser, cardNumber)
                     elif (
@@ -813,15 +718,13 @@ def completeDailySet(browser: WebDriver):
                             filter = filter.split(":", 1)
                             filters[filter[0]] = filter[1]
                         if "PollScenarioId" in filters:
-                            print(
-                                "[DAILY SET]",
-                                "Completing poll of card " + str(cardNumber),
+                            log.info(
+                                f"[DAILY SET] Completing poll of card {str(cardNumber)}"
                             )
                             completeDailySetSurvey(browser, cardNumber)
                         else:
-                            print(
-                                "[DAILY SET]",
-                                "Completing quiz of card " + str(cardNumber),
+                            log.info(
+                                f"[DAILY SET] Completing quiz of card {str(cardNumber)}"
                             )
                             completeDailySetVariableActivity(browser, cardNumber)
         except:
@@ -1106,61 +1009,79 @@ def completeMorePromotions(browser: WebDriver):
             resetTabs(browser)
 
 
-def getRemainingSearches(browser: WebDriver):
+def getRemainingSearches(browser: WebDriver, desktop: bool = True):
     dashboard = getDashboardData(browser)
+
     searchPoints = 1
     counters = dashboard["userStatus"]["counters"]
     if not "pcSearch" in counters:
-        return 0, 0
-    progressDesktop = (
-        counters["pcSearch"][0]["pointProgress"]
-        + counters["pcSearch"][1]["pointProgress"]
-    )
-    targetDesktop = (
-        counters["pcSearch"][0]["pointProgressMax"]
-        + counters["pcSearch"][1]["pointProgressMax"]
-    )
-    if targetDesktop == 33:
-        # Level 1 EU
-        searchPoints = 3
-    elif targetDesktop == 55:
-        # Level 1 US
-        searchPoints = 5
-    elif targetDesktop == 102:
-        # Level 2 EU
-        searchPoints = 3
-    elif targetDesktop >= 170:
-        # Level 2 US
-        searchPoints = 5
-    remainingDesktop = int((targetDesktop - progressDesktop) / searchPoints)
-    remainingMobile = 0
-    if dashboard["userStatus"]["levelInfo"]["activeLevel"] != "Level1":
-        progressMobile = counters["mobileSearch"][0]["pointProgress"]
-        targetMobile = counters["mobileSearch"][0]["pointProgressMax"]
-        remainingMobile = int((targetMobile - progressMobile) / searchPoints)
-    return remainingDesktop, remainingMobile
+        return 0
+
+    remaining_searches = 0
+    if desktop:
+        if not "pcSearch" in counters:
+            return 0
+
+        progressDesktop = (
+            counters["pcSearch"][0]["pointProgress"]
+            + counters["pcSearch"][1]["pointProgress"]
+        )
+        targetDesktop = (
+            counters["pcSearch"][0]["pointProgressMax"]
+            + counters["pcSearch"][1]["pointProgressMax"]
+        )
+        if targetDesktop == 33:
+            # Level 1 EU
+            searchPoints = 3
+        elif targetDesktop == 55:
+            # Level 1 US
+            searchPoints = 5
+        elif targetDesktop == 102:
+            # Level 2 EU
+            searchPoints = 3
+        elif targetDesktop >= 170:
+            # Level 2 US
+            searchPoints = 5
+        remaining_searches = int((targetDesktop - progressDesktop) / searchPoints)
+    else:
+        if not "mobileSearch" in counters:
+            return 0
+        if dashboard["userStatus"]["levelInfo"]["activeLevel"] != "Level1":
+            progressMobile = counters["mobileSearch"][0]["pointProgress"]
+            targetMobile = counters["mobileSearch"][0]["pointProgressMax"]
+            remaining_searches = int((targetMobile - progressMobile) / searchPoints)
+    return remaining_searches
 
 
 def prRed(prt):
-    print("\033[91m{}\033[00m".format(prt))
+    log.info("\033[91m{}\033[00m".format(prt))
 
 
 def prGreen(prt):
-    print("\033[92m{}\033[00m".format(prt))
+    log.info("\033[92m{}\033[00m".format(prt))
 
 
 def prPurple(prt):
-    print("\033[95m{}\033[00m".format(prt))
+    log.info("\033[95m{}\033[00m".format(prt))
 
 
 def prYellow(prt):
-    print("\033[93m{}\033[00m".format(prt))
+    log.info("\033[93m{}\033[00m".format(prt))
 
 
-LANG, GEO = "", ""
+(
+    LANG,
+    GEO,
+    TZ,
+) = getCCodeLangAndOffset()  # In case of issues use the follwowing - ("de", "DE", 120)
 
 
-def main():
+def handler(event, context):
+
+    log.info(f"Event - {event}, type - {type(event)}, context - {context}")
+
+    start = time.perf_counter()
+
     prRed(
         """
     ███╗   ███╗███████╗    ███████╗ █████╗ ██████╗ ███╗   ███╗███████╗██████╗ 
@@ -1172,7 +1093,7 @@ def main():
     )
     prPurple("        by Charles Bel (@charlesbel)               version 1.1\n")
 
-    LANG, GEO, TZ = getCCodeLangAndOffset()
+    # LANG, GEO, TZ = ("de", "DE", 120)  # getCCodeLangAndOffset()
 
     try:
         account_path = os.path.dirname(os.path.abspath(__file__)) + "/accounts.json"
@@ -1194,70 +1115,85 @@ def main():
         ACCOUNTS = json.load(open(account_path, "r"))
 
     # random.shuffle(ACCOUNTS)
-
+    desktop = event.get('Desktop', True)
     for account in ACCOUNTS:
+        prYellow(f"******************** {account['username']} ********************")
+        if desktop:
+            earned_points, current_points = get_desktop_points(account)
+        else:
+            earned_points, current_points = get_mobile_points(account)
 
-        prYellow("********************" + account["username"] + "********************")
-        browser = browserSetup(True, PC_USER_AGENT)
-        print("[LOGIN]", "Logging-in...")
-        login(browser, account["username"], account["password"])
-        prGreen("[LOGIN] Logged-in successfully !")
-        startingPoints = POINTS_COUNTER
-        prGreen(
-            "[POINTS] You have " + str(POINTS_COUNTER) + " points on your account !"
+        total_time = time.perf_counter() - start
+        prPurple(
+            f"[TIME] {'Desktop' if desktop else 'Mobile'} search time - {total_time} seconds!"
         )
-        browser.get("https://account.microsoft.com/rewards/")
-        print("[DAILY SET]", "Trying to complete the Daily Set...")
-        completeDailySet(browser)
-        prGreen("[DAILY SET] Completed the Daily Set successfully !")
-        print("[PUNCH CARDS]", "Trying to complete the Punch Cards...")
-        completePunchCards(browser)
-        prGreen("[PUNCH CARDS] Completed the Punch Cards successfully !")
-        print("[MORE PROMO]", "Trying to complete More Promotions...")
-        completeMorePromotions(browser)
-        prGreen("[MORE PROMO] Completed More Promotions successfully !")
-        remainingSearches, remainingSearchesM = getRemainingSearches(browser)
-        if remainingSearches != 0:
-            print("[BING]", "Starting Desktop and Edge Bing searches...")
-            bingSearches(browser, remainingSearches)
-            prGreen("[BING] Finished Desktop and Edge Bing searches !")
+
+        prGreen(f"[POINTS] You are now at {current_points} points !\n")
+
+
+def get_proper_browser(account, desktop: str = True):
+    if desktop:
+        USER_AGENT = PC_USER_AGENT
+        device = "Desktop"
+    else:
+        USER_AGENT = MOBILE_USER_AGENT
+        device = "Mobile"
+
+    browser = browserSetup(True, USER_AGENT)
+    log.info(f"[LOGIN] Logging-in as {device}")
+    login(browser, account["username"], account["password"])
+    prGreen("[LOGIN] Logged-in successfully !")
+    return browser
+
+
+def get_desktop_points(account):
+    browser = get_proper_browser(account, desktop=True)
+    startingPoints = POINTS_COUNTER
+    prGreen(f"[POINTS] You have {str(POINTS_COUNTER)} points on your account!")
+
+    browser.get("https://account.microsoft.com/rewards/")
+    log.info("[DAILY SET] Trying to complete the Daily Set...")
+    completeDailySet(browser)
+    prGreen("[DAILY SET] Completed the Daily Set successfully!")
+    log.info("[PUNCH CARDS] Trying to complete the Punch Cards...")
+    completePunchCards(browser)
+    prGreen("[PUNCH CARDS] Completed the Punch Cards successfully!")
+    log.info("[MORE PROMO] Trying to complete More Promotions...")
+    completeMorePromotions(browser)
+    prGreen("[MORE PROMO] Completed More Promotions successfully !")
+
+    remainingSearches = getRemainingSearches(browser, True)
+    if remainingSearches != 0:
+        log.info("[BING] Starting Desktop and Edge Bing searches...")
+        bingSearches(browser, remainingSearches)
+        prGreen("[BING] Finished Desktop and Edge Bing searches !")
+    browser.quit()
+
+    earned_points = POINTS_COUNTER - startingPoints
+    prGreen(f"[POINTS] You have earned {str(earned_points)} points for Desktop today!")
+    return earned_points, POINTS_COUNTER
+
+
+def get_mobile_points(account):
+    browser = get_proper_browser(account, desktop=False)
+    startingPoints = POINTS_COUNTER
+    prGreen(f"[POINTS] You have {str(POINTS_COUNTER)} points on your account!")
+
+    remainingSearches = getRemainingSearches(browser, False)
+    if remainingSearches != 0:
+        browser = browserSetup(True, MOBILE_USER_AGENT)
+        log.info("[LOGIN] Logging-in as mobile...")
+        login(browser, account["username"], account["password"], True)
+        log.info("[LOGIN] Logged-in successfully !")
+        log.info("[BING] Starting Mobile Bing searches...")
+        bingSearches(browser, remainingSearches, True)
+        prGreen("[BING] Finished Mobile Bing searches !")
         browser.quit()
-        pc_points = POINTS_COUNTER - startingPoints
-        prGreen(
-            "[POINTS] You have earned " + str(pc_points) + " points for Desktop today !"
-        )
 
-        if remainingSearchesM != 0:
-            browser = browserSetup(True, MOBILE_USER_AGENT)
-            print("[LOGIN]", "Logging-in as mobile...")
-            login(browser, account["username"], account["password"], True)
-            print("[LOGIN]", "Logged-in successfully !")
-            print("[BING]", "Starting Mobile Bing searches...")
-            bingSearches(browser, remainingSearchesM, True)
-            prGreen("[BING] Finished Mobile Bing searches !")
-            browser.quit()
-        mobile_points = POINTS_COUNTER - startingPoints - pc_points
-        total_points = POINTS_COUNTER - startingPoints
-
-        prGreen(
-            "[POINTS] You have earned "
-            + str(mobile_points)
-            + " points for mobile today !"
-        )
-        prGreen(
-            "[POINTS] You have earned " + str(total_points) + " points total today !"
-        )
-
-        # todays_date = date.today()
-
-        # points_dict = {"reward_date":todays_date, "pc_points":pc_points, "mobile_points":mobile_points, "total_points":total_points}
-        # df = pd.read_csv("points.csv")
-
-        # df = df.append(points_dict, ignore_index=True)
-        # df['reward_date'] = pd.to_datetime(df.reward_date, format='%Y-%m-%d')
-        # df.to_csv('points.csv', index=False)
-        prGreen("[POINTS] You are now at " + str(POINTS_COUNTER) + " points !\n")
+    earned_points = POINTS_COUNTER - startingPoints
+    prGreen(f"[POINTS] You have earned {str(earned_points)} points for Mobile today!")
+    return earned_points, POINTS_COUNTER
 
 
 # Execute Main
-main()
+# handler(",")
