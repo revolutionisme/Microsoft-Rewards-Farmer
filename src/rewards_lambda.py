@@ -1077,9 +1077,7 @@ def prYellow(prt):
 
 
 def handler(event, context):
-
     log.info(f"Event - {event}, type - {type(event)}, context - {context}")
-
     start = time.perf_counter()
 
     prRed(
@@ -1115,7 +1113,7 @@ def handler(event, context):
         ACCOUNTS = json.load(open(account_path, "r"))
 
     # random.shuffle(ACCOUNTS)
-    desktop = event.get('Desktop', True)
+    desktop = event.get("Desktop", True)
     for account in ACCOUNTS:
         prYellow(f"******************** {account['username']} ********************")
         if desktop:

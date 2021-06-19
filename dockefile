@@ -1,0 +1,25 @@
+FROM public.ecr.aws/lambda/python:3.8
+
+ENV AWS_LAMBDA_FUNCTION_TIMEOUT=900
+
+RUN yum update
+RUN yum install -y unzip openjdk-8-jre-headless xvfb libxi6 libgconf-2-4 wget
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+RUN yum localinstall -y google-chrome-stable_current_x86_64.rpm
+
+# RUN yum install -y google-chrome-stable
+
+RUN wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`/chromedriver_linux64.zip
+RUN unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/
+
+
+RUN chown root:root /usr/local/bin/chromedriver
+RUN chmod 0755 /usr/local/bin/chromedriver
+
+# WORKDIR /app
+COPY requirements.txt requirements.txt
+COPY src/rewards_lambda.py rewards_lambda.py
+COPY src/telegram-send.conf telegram-send.conf
+COPY src/accounts.json accounts.json
+RUN pip3 install -r requirements.txt
+CMD [ "rewards_lambda.handler" ]
